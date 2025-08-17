@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bank Reconciliation System</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #384959;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #6A89A7;
+            color: black;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            background: #fafafa;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .upload-zone:hover {
+            border-color: #88BDF2;
+            background: #f8f8f8;
+            transform: translateY(-2px);
+        }
+
+        .upload-zone.dragover {
+            border-color: #88BDF2;
+            background: #f0f0f0;
+            transform: scale(1.02);
+        }
+
+        .upload-zone.uploaded {
+            border-color: #88BDF2;
+            background: #f0f0f0;
+        }
+
+        .upload-zone h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .upload-zone p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+
+        .upload-btn {
+            background: #BDDDFC;
+            color: #384959;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #88BDF2;
+            color: white;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f5e8;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .config-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #88BDF2;
+        }
+
+        .process-btn {
+            background: #BDDDFC;
+            color: #384959;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            background: #88BDF2;
+            color: white;
+            box-shadow: 0 5px 15px rgba(136, 189, 242, 0.3);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #88BDF2;
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .status-log {
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            border: 2px solid #88BDF2;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-section h3 {
+            color: #384959;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #6A89A7;
+            margin-bottom: 5px;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .folder-link {
+            display: inline-block;
+            background: #BDDDFC;
+            color: #384959;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+
+        .folder-link:hover {
+            background: #88BDF2;
+            color: white;
+        }
+
+        .error-section {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff5f5;
+            border: 2px solid #f56565;
+            border-radius: 8px;
+            color: #c53030;
+        }
+
+        .error-section.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bank Reconciliation System</h1>
+        </div>
+
+        <div class="content">
+            <!-- File Upload Section -->
+            <div class="upload-section">
+                <!-- Bank File Upload -->
+                <div class="upload-zone" id="bankDropZone">
+                    <input type="file" id="bankFile" class="file-input" accept=".csv">
+                    <h3>Bank Transactions</h3>
+                    <p>Drag & drop your bank CSV file here<br>or click to browse</p>
+                    <button type="button" class="upload-btn" onclick="document.getElementById('bankFile').click()">
+                        Choose Bank File
+                    </button>
+                    <div class="file-info" id="bankFileInfo"></div>
+                </div>
+
+                <!-- Internal File Upload -->
+                <div class="upload-zone" id="internalDropZone">
+                    <input type="file" id="internalFile" class="file-input" accept=".xlsx,.csv">
+                    <h3>Internal Records</h3>
+                    <p>Drag & drop your internal Excel/CSV file here<br>or click to browse</p>
+                    <button type="button" class="upload-btn" onclick="document.getElementById('internalFile').click()">
+                        Choose Internal File
+                    </button>
+                    <div class="file-info" id="internalFileInfo"></div>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h3>Configuration</h3>
+                <div class="form-group">
+                    <label for="monthYear">Month/Year (YYYY_MM format):</label>
+                    <input type="text" id="monthYear" placeholder="e.g., 2025_07" required>
+                </div>
+            </div>
+
+            <!-- Process Button -->
+            <button id="processBtn" class="process-btn" disabled>
+Start Reconciliation Process
+            </button>
+
+            <!-- Progress Section -->
+            <div class="progress-section" id="progressSection">
+                <div class="progress-text" id="progressText">Initializing...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="status-log" id="statusLog"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <h3>Reconciliation Complete!</h3>
+                <div class="results-grid" id="resultsGrid"></div>
+                <a href="#" id="folderLink" class="folder-link" target="_blank">Open Results Folder</a>
+            </div>
+
+            <!-- Error Section -->
+            <div class="error-section" id="errorSection">
+                <h3>Error</h3>
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let bankFileData = null;
+        let internalFileData = null;
+        let uploadedBankFile = null;
+        let uploadedInternalFile = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            setDefaultMonthYear();
+        });
+
+        function setupEventListeners() {
+            // File input changes
+            document.getElementById('bankFile').addEventListener('change', handleBankFileSelect);
+            document.getElementById('internalFile').addEventListener('change', handleInternalFileSelect);
+
+            // Drag and drop
+            setupDragAndDrop('bankDropZone', 'bankFile');
+            setupDragAndDrop('internalDropZone', 'internalFile');
+
+            // Process button
+            document.getElementById('processBtn').addEventListener('click', startReconciliation);
+
+            // Month/Year input
+            document.getElementById('monthYear').addEventListener('input', checkFormValidity);
+        }
+
+        function setDefaultMonthYear() {
+            const now = new Date();
+            const year = now.getFullYear();
+            let month = now.getMonth(); // 0-based, so August = 7
+            
+            // Get previous month
+            if (month === 0) {
+                // If January, go to December of previous year
+                month = 12;
+                year = year - 1;
+            }
+            
+            const monthStr = String(month).padStart(2, '0');
+            document.getElementById('monthYear').value = `${year}_${monthStr}`;
+            checkFormValidity();
+        }
+
+        function setupDragAndDrop(dropZoneId, fileInputId) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(fileInputId);
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        function handleBankFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file, 'bank');
+            }
+        }
+
+        function handleInternalFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file, 'internal');
+            }
+        }
+
+        function processFile(file, fileType) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileData = e.target.result.split(',')[1]; // Remove data URL prefix
+                
+                if (fileType === 'bank') {
+                    bankFileData = fileData;
+                    showFileInfo('bankFileInfo', file.name, file.size);
+                    document.getElementById('bankDropZone').classList.add('uploaded');
+                } else {
+                    internalFileData = fileData;
+                    showFileInfo('internalFileInfo', file.name, file.size);
+                    document.getElementById('internalDropZone').classList.add('uploaded');
+                }
+
+                uploadFile(fileData, file.name, fileType);
+                checkFormValidity();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showFileInfo(infoId, fileName, fileSize) {
+            const infoDiv = document.getElementById(infoId);
+            const sizeKB = Math.round(fileSize / 1024);
+            infoDiv.innerHTML = `
+                <strong>${fileName}</strong><br>
+                Size: ${sizeKB} KB
+            `;
+            infoDiv.classList.add('show');
+        }
+
+        function uploadFile(fileData, fileName, fileType) {
+            logStatus(`Uploading ${fileType} file: ${fileName}...`);
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    if (result.success) {
+                        if (fileType === 'bank') {
+                            uploadedBankFile = result;
+                        } else {
+                            uploadedInternalFile = result;
+                        }
+                        logStatus(`${fileName} uploaded successfully`);
+                    } else {
+                        logStatus(`Upload failed: ${result.error}`);
+                        showError(`Upload failed: ${result.error}`);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    logStatus(`Upload error: ${error.message}`);
+                    showError(`Upload error: ${error.message}`);
+                })
+                .uploadFile(fileData, fileName, fileType);
+        }
+
+        function checkFormValidity() {
+            const monthYear = document.getElementById('monthYear').value.trim();
+            const hasFiles = bankFileData && internalFileData;
+            const hasMonthYear = monthYear && monthYear.match(/^\d{4}_\d{2}$/);
+            
+            document.getElementById('processBtn').disabled = !(hasFiles && hasMonthYear);
+        }
+
+        function startReconciliation() {
+            if (!uploadedBankFile || !uploadedInternalFile) {
+                showError('Please wait for file uploads to complete');
+                return;
+            }
+
+            const monthYear = document.getElementById('monthYear').value.trim();
+            
+            // Show progress section
+            document.getElementById('progressSection').classList.add('show');
+            document.getElementById('resultsSection').classList.remove('show');
+            document.getElementById('errorSection').classList.remove('show');
+            document.getElementById('processBtn').disabled = true;
+
+            // Reset progress
+            updateProgress(0, 'Starting reconciliation...');
+            clearStatusLog();
+            
+            logStatus('Starting reconciliation process...');
+            logStatus(`Processing month: ${monthYear}`);
+            logStatus(`Bank file: ${uploadedBankFile.fileName}`);
+            logStatus(`Internal file: ${uploadedInternalFile.fileName}`);
+
+            // Simulate progress updates
+            let progress = 10;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 15;
+                    updateProgress(Math.min(progress, 90), 'Processing transactions...');
+                }
+            }, 500);
+
+            // Start actual processing
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    clearInterval(progressInterval);
+                    
+                    if (result.success) {
+                        updateProgress(100, 'Reconciliation completed successfully!');
+                        logStatus('Reconciliation completed successfully!');
+                        logStatus(`Output folder: ${result.monthlyFolderName}`);
+                        logStatus(`Accounts processed: ${result.accountsProcessed}`);
+                        
+                        showResults(result);
+                    } else {
+                        logStatus(`Reconciliation failed: ${result.error}`);
+                        showError(`Reconciliation failed: ${result.error}`);
+                    }
+                    
+                    document.getElementById('processBtn').disabled = false;
+                })
+                .withFailureHandler(function(error) {
+                    clearInterval(progressInterval);
+                    logStatus(`Processing error: ${error.message}`);
+                    showError(`Processing error: ${error.message}`);
+                    document.getElementById('processBtn').disabled = false;
+                })
+                .processReconciliation(uploadedBankFile.fileId, uploadedInternalFile.fileId, monthYear);
+        }
+
+        function updateProgress(percentage, text) {
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        function logStatus(message) {
+            const statusLog = document.getElementById('statusLog');
+            const timestamp = new Date().toLocaleTimeString();
+            statusLog.innerHTML += `[${timestamp}] ${message}\n`;
+            statusLog.scrollTop = statusLog.scrollHeight;
+        }
+
+        function clearStatusLog() {
+            document.getElementById('statusLog').innerHTML = '';
+        }
+
+        function showResults(result) {
+            document.getElementById('resultsSection').classList.add('show');
+            document.getElementById('folderLink').href = result.monthlyFolderUrl;
+            
+            // Calculate totals
+            let totalBank = 0, totalInternal = 0, totalMatched = 0, totalCloseMatches = 0;
+            
+            result.results.forEach(account => {
+                totalBank += account.bankTransactionCount;
+                totalInternal += account.myTransactionCount;
+                totalMatched += account.matchedCount;
+                totalCloseMatches += account.closeMatchCount;
+            });
+
+            const matchRate = totalInternal > 0 ? ((totalMatched / totalInternal) * 100).toFixed(1) : 0;
+
+            // Display summary cards
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = `
+                <div class="result-card">
+                    <div class="result-number">${result.accountsProcessed}</div>
+                    <div class="result-label">Accounts Processed</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${totalBank}</div>
+                    <div class="result-label">Bank Transactions</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${totalInternal}</div>
+                    <div class="result-label">Internal Transactions</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${totalMatched}</div>
+                    <div class="result-label">Exact Matches</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${totalCloseMatches}</div>
+                    <div class="result-label">Close Matches</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number">${matchRate}%</div>
+                    <div class="result-label">Match Rate</div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            document.getElementById('errorSection').classList.add('show');
+            document.getElementById('errorMessage').textContent = message;
+        }
+    </script>
+</body>
+</html>
