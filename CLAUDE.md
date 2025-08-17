@@ -156,3 +156,89 @@ No icons, clean professional appearance, defaults to previous month for processi
 - Folder IDs in CONFIG are references only (safe to version control)
 - Web app access: "ANYONE" (can be restricted if needed)
 - Files archived with timestamps for audit trail
+
+## Critical Context for Future Development
+
+### Business Requirements Understanding
+- **33+ trust accounts** need monthly reconciliation
+- **Check timing is crucial** - checks written one month often clear the next
+- **Exact amount matching** is required (not fuzzy matching)
+- **Opposite signs are normal** - bank shows negative, internal shows positive for disbursements
+- **Manual review burden** must be minimized - current system requires too much manual work
+
+### Data Format Specifics
+- **Bank CSV format**: Headers include `TRC Number`, `Account Number`, `Post Date`, `Amount`, `Additional Reference`, `Description`, `Type`
+- **Internal format**: Complex field names like `transactiontable_accountings_ProbateMain::ACBT_AccountNumber`
+- **Currency handling**: Bank amounts include `$` and `,` symbols, sometimes parentheses for negatives
+- **Check numbers**: Bank uses `Additional Reference`, Internal uses `Check Number` field
+- **Account matching**: Must group by account number for individual reconciliation reports
+
+### User Workflow Context
+- **Monthly process** typically run for previous month (e.g., run August reconciliation in September)
+- **Two file upload** - one bank CSV, one internal Excel/CSV
+- **Review workflow** - user examines "Close Matches" and unmatched items for manual decisions
+- **Excel output preferred** - user needs downloadable files, not just web interface
+- **Audit trail important** - files must be archived with timestamps
+
+### Performance & Scale Reality
+- **Large datasets** - 33+ accounts with monthly transactions
+- **Processing time** - current 30-60 seconds is acceptable
+- **File size limits** - 10MB uploads work fine with Google Apps Script
+- **User patience** - visual progress bar is essential during processing
+
+### Major Pain Points Solved
+1. **Amount parsing failure** - `parseFloat("$4,416.00")` returned `NaN`
+2. **Sign mismatch** - bank `-$340.97` not matching internal `$340.97`
+3. **Date tolerance too strict** - 7 days insufficient for check clearing
+4. **Check timing issue** - checks written July 10, cleared August 14 appeared unmatched
+5. **False matches on empty checks** - prevented with proper null checking
+
+### Critical Technical Decisions Made
+- **Two-tier matching** prioritizes date+amount over check number matching
+- **30-day tolerance** balances accuracy with check clearing reality
+- **Absolute value comparison** for amounts handles sign differences
+- **Sequential processing** prevents double-matching of transactions
+- **Excel conversion** via Google Sheets for compatibility
+
+### Next Phase Architecture (Cumulative System)
+**Why needed**: Current monthly snapshots miss cross-month transactions
+**Approach**: Persistent Google Sheets per account that accumulate all historical data
+**Challenge**: Re-running matching on large datasets efficiently
+**Benefit**: July check clearing in August will auto-match retroactively
+
+### Testing Strategy
+- **Use real data** provided by user (Linda S. Lischer account examples)
+- **Verify specific cases**: `-$10.28` check #1005 should be MATCH not close match
+- **Check edge cases**: empty check numbers, large date differences, currency formatting
+- **Performance test**: Full 33-account monthly run
+
+### Deployment Management
+- **Multiple deployment versions** exist - always create new deployment for testing
+- **Current production URL**: Keep track of which deployment users are actively using
+- **Rollback strategy**: Previous deployments remain accessible if issues arise
+
+### User Interface Philosophy
+- **Minimal color palette** - user specifically requested muted blues/grays
+- **No icons** - clean professional appearance
+- **Bold important text** - "Start Reconciliation Process" button
+- **Previous month default** - users typically reconcile completed months
+
+### Error Patterns to Watch
+- **Field name mismatches** - bank vs internal field names change
+- **Date parsing failures** - various date formats in source data
+- **Amount tolerance edge cases** - rounding differences
+- **Google Drive quota limits** - large file processing
+- **Apps Script timeout limits** - very large datasets
+
+### Success Metrics
+- **Increased match rate** - fewer items in "Bank Only" and "Our Records Only"
+- **Reduced manual review** - fewer questionable matches in "Close Matches"
+- **User satisfaction** - less time spent on monthly reconciliation
+- **Audit compliance** - complete trail of all transactions processed
+
+### Future Feature Requests (Likely)
+- **Batch processing** - multiple months at once
+- **Exception reporting** - aged unmatched items
+- **Email notifications** - automated alerts for large discrepancies
+- **API access** - integrate with accounting software
+- **Advanced matching rules** - custom logic per account type
