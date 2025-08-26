@@ -261,9 +261,6 @@ function loadBankTransactions(fileId) {
           transaction[header] = row[index];
         });
         // Standardize dates
-        if (transaction['Post Date']) {
-          transaction['Post Date'] = standardizeDate(transaction['Post Date']);
-        }
         if (transaction['Date']) {
           transaction['Date'] = standardizeDate(transaction['Date']);
         }
@@ -409,7 +406,7 @@ function matchTransactions(bankTransactions, myTransactions) {
   bankTransactions.forEach((bankTrans, bankIdx) => {
     if (matchedBankIndices.has(bankIdx)) return;
     
-    const bankDate = parseDate(bankTrans['Post Date'] || bankTrans['Date']);
+    const bankDate = parseDate(bankTrans['Date']);
     const bankAmount = parseAmount(bankTrans['Amount']);
     
     myTransactions.forEach((myTrans, myIdx) => {
@@ -437,6 +434,8 @@ function matchTransactions(bankTransactions, myTransactions) {
   });
   
   // TIER 2: Check number + amount matches (any date)
+  // DISABLED - Bank data doesn't contain check numbers or transaction types
+  /*
   bankTransactions.forEach((bankTrans, bankIdx) => {
     if (matchedBankIndices.has(bankIdx)) return;
     
@@ -457,7 +456,7 @@ function matchTransactions(bankTransactions, myTransactions) {
           bankCheckNum === myCheckNum && 
           amountsMatch(bankAmount, myAmount)) {
         
-        const bankDate = parseDate(bankTrans['Post Date'] || bankTrans['Date']);
+        const bankDate = parseDate(bankTrans['Date']);
         const myDate = parseDate(myTrans['Date']);
         const daysDiff = getDaysDifference(bankDate, myDate);
         
@@ -473,6 +472,7 @@ function matchTransactions(bankTransactions, myTransactions) {
       }
     });
   });
+  */
   
   const bankOnly = bankTransactions.filter((_, idx) => !matchedBankIndices.has(idx));
   const myOnly = myTransactions.filter((_, idx) => !matchedMyIndices.has(idx));
@@ -522,14 +522,14 @@ function createAccountWorkbook(folder, accountNumber, fullName, bankTrans,
     
     // Sheet 3: Matched
     const matchedSheet = ss.insertSheet('Matched');
-    const matchedHeaders = ['Bank Date', 'Bank Amount', 'Bank Check #', '', 'Our Date', 
+    const matchedHeaders = ['Bank Date', 'Bank Amount', '', 'Our Date', 
                            'Our Amount', 'Our Check #', 'Description', 'Type', 'Days Diff'];
     const matchedData = [matchedHeaders];
     matchResult.matched.forEach(match => {
       matchedData.push([
-        match.bank['Post Date'] || match.bank['Date'],
+        match.bank['Date'],
         match.bank['Amount'],
-        match.bank['Additional Reference'] || '',
+        '', // No check numbers in bank data
         '',
         match.my['Date'],
         match.my['Amount'],
@@ -548,14 +548,14 @@ function createAccountWorkbook(folder, accountNumber, fullName, bankTrans,
     
     // Sheet 4: Close Matches
     const closeSheet = ss.insertSheet('Close Matches');
-    const closeHeaders = ['Bank Date', 'Bank Amount', 'Bank Check #', '', 'Our Date', 
+    const closeHeaders = ['Bank Date', 'Bank Amount', '', 'Our Date', 
                          'Our Amount', 'Our Check #', 'Description', 'Type', 'Days Diff'];
     const closeData = [closeHeaders];
     matchResult.closeMatches.forEach(match => {
       closeData.push([
-        match.bank['Post Date'] || match.bank['Date'],
+        match.bank['Date'],
         match.bank['Amount'],
-        match.bank['Additional Reference'] || '',
+        '', // No check numbers in bank data
         '',
         match.my['Date'],
         match.my['Amount'],
@@ -577,14 +577,14 @@ function createAccountWorkbook(folder, accountNumber, fullName, bankTrans,
     
     // Sheet 5: Check Matches
     const checkMatchSheet = ss.insertSheet('Check Matches');
-    const checkHeaders = ['Bank Date', 'Bank Amount', 'Bank Check #', '', 'Our Date', 
+    const checkHeaders = ['Bank Date', 'Bank Amount', '', 'Our Date', 
                          'Our Amount', 'Our Check #', 'Description', 'Type', 'Matched Check #', 'Days Diff'];
     const checkData = [checkHeaders];
     matchResult.checkMatches.forEach(match => {
       checkData.push([
-        match.bank['Post Date'] || match.bank['Date'],
+        match.bank['Date'],
         match.bank['Amount'],
-        match.bank['Additional Reference'] || '',
+        '', // No check numbers in bank data
         '',
         match.my['Date'],
         match.my['Amount'],
